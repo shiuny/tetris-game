@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box; /* モーダルやコンテナのサイズ安定化 */
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -11,6 +15,8 @@ body {
 .container {
   text-align: center;
   padding: 10px;
+  width: 100%;
+  max-width: 1200px; /* 画面幅制限 */
 }
 
 .header {
@@ -41,10 +47,10 @@ body {
 .game-area {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap; /* 旧Safari向け */
+  flex-wrap: nowrap;
   gap: 15px;
   justify-content: center;
-  align-items: flex-start; /* 旧Safariのバグ回避 */
+  align-items: flex-start;
 }
 
 #tetris, #next-piece {
@@ -70,8 +76,10 @@ body {
   padding: 20px;
   border-radius: 10px;
   max-width: 80%;
+  min-width: 300px; /* 最小幅で飛び出し防止 */
   max-height: 80vh;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .hidden {

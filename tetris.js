@@ -1,7 +1,7 @@
 const canvas = document.getElementById('tetris');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
 const nextCanvas = document.getElementById('next-piece');
-const nextCtx = nextCanvas.getContext('2d');
+const nextCtx = nextCanvas ? nextCanvas.getContext('2d') : null;
 const scoreElement = document.getElementById('score');
 const highScoreElement = document.getElementById('high-score');
 const playPauseButton = document.getElementById('play-pause');
@@ -9,6 +9,12 @@ const resetButton = document.getElementById('reset');
 const helpButton = document.getElementById('help');
 const helpModal = document.getElementById('help-modal');
 const closeHelpButton = document.getElementById('close-help');
+
+if (!canvas || !ctx || !nextCanvas || !nextCtx) {
+  console.error('Canvas initialization failed: Elements or context missing');
+  alert('Error: Unable to initialize game canvas. Check browser compatibility.');
+  throw new Error('Canvas initialization failed');
+}
 
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
@@ -48,47 +54,55 @@ function createPiece() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let y = 0; y < GRID_HEIGHT; y++) {
-    for (let x = 0; x < GRID_WIDTH; x++) {
-      if (board[y][x]) {
-        ctx.fillStyle = board[y][x];
-        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-        ctx.strokeStyle = '#fff';
-        ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-      }
-    }
-  }
-  if (currentPiece) {
-    ctx.fillStyle = currentPiece.color;
-    for (let y = 0; y < currentPiece.shape.length; y++) {
-      for (let x = 0; x < currentPiece.shape[y].length; x++) {
-        if (currentPiece.shape[y][x]) {
-          ctx.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+  try {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      for (let x = 0; x < GRID_WIDTH; x++) {
+        if (board[y][x]) {
+          ctx.fillStyle = board[y][x];
+          ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
           ctx.strokeStyle = '#fff';
-          ctx.strokeRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+          ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
         }
       }
     }
+    if (currentPiece) {
+      ctx.fillStyle = currentPiece.color;
+      for (let y = 0; y < currentPiece.shape.length; y++) {
+        for (let x = 0; x < currentPiece.shape[y].length; x++) {
+          if (currentPiece.shape[y][x]) {
+            ctx.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+          }
+        }
+      }
+    }
+    drawNextPiece();
+  } catch (e) {
+    console.error('Draw error:', e);
   }
-  drawNextPiece();
 }
 
 function drawNextPiece() {
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  if (nextPiece) {
-    nextCtx.fillStyle = nextPiece.color;
-    const offsetX = (4 - nextPiece.shape[0].length) / 2;
-    const offsetY = (4 - nextPiece.shape.length) / 2;
-    for (let y = 0; y < nextPiece.shape.length; y++) {
-      for (let x = 0; x < nextPiece.shape[y].length; x++) {
-        if (nextPiece.shape[y][x]) {
-          nextCtx.fillRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
-          nextCtx.strokeStyle = '#fff';
-          nextCtx.strokeRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
+  try {
+    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (nextPiece) {
+      nextCtx.fillStyle = nextPiece.color;
+      const offsetX = (4 - nextPiece.shape[0].length) / 2;
+      const offsetY = (4 - nextPiece.shape.length) / 2;
+      for (let y = 0; y < nextPiece.shape.length; y++) {
+        for (let x = 0; x < nextPiece.shape[y].length; x++) {
+          if (nextPiece.shape[y][x]) {
+            nextCtx.fillRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
+            nextCtx.strokeStyle = '#fff';
+            nextCtx.strokeRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
+          }
         }
       }
     }
+  } catch (e) {
+    console.error('Draw next piece error:', e);
   }
 }
 
@@ -256,12 +270,13 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
 let isSwiping = false;
+let startTouchCount = 0;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
-  const touchCount = e.touches.length;
-  console.log(`Touch start: ${touchCount} finger(s), x=${e.touches[0].clientX}, y=${e.touches[0].clientY}`);
-  if (touchCount > 2) return; // 3本指以上は無視
+  startTouchCount = e.touches.length;
+  console.log(`Touch start: ${startTouchCount} finger(s), x=${e.touches[0].clientX}, y=${e.touches[0].clientY}`);
+  if (startTouchCount > 2) return;
   isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
@@ -277,11 +292,11 @@ canvas.addEventListener('touchmove', (e) => {
   const isInsideCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
                         touch.clientY >= rect.top && touch.clientY <= rect.bottom;
   console.log(`Touch move: ${touchCount} finger(s), x=${touch.clientX}, y=${touch.clientY}, inside=${isInsideCanvas}`);
-  if (!isInsideCanvas) return; // キャンバス外は無視
+  if (!isInsideCanvas) return;
   isSwiping = true;
   const deltaX = touch.clientX - touchStartX;
   const deltaY = touch.clientY - touchStartY;
-  if (touchCount === 1 && currentPiece) {
+  if (touchCount === 1 && currentPiece && startTouchCount === 1) {
     if (Math.abs(deltaX) > 30) {
       currentPiece.x += deltaX > 0 ? 1 : -1;
       if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
@@ -292,7 +307,7 @@ canvas.addEventListener('touchmove', (e) => {
       dropInterval = 100;
       console.log('Single swipe down: Faster drop');
     }
-  } else if (touchCount === 2 && currentPiece) {
+  } else if (touchCount === 2 && currentPiece && startTouchCount === 2) {
     if (deltaY > 20) {
       console.log('Two-finger swipe: Instant drop');
       while (!collides()) currentPiece.y++;
@@ -313,7 +328,7 @@ canvas.addEventListener('touchend', (e) => {
   const isInsideCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
                         touch.clientY >= rect.top && touch.clientY <= rect.bottom;
   console.log(`Touch end: ${touchCount} finger(s), duration=${touchDuration}ms, x=${touch.clientX}, inside=${isInsideCanvas}`);
-  if (!isSwiping && touchDuration < 250 && isInsideCanvas && currentPiece) {
+  if (!isSwiping && startTouchCount === 1 && touchDuration < 300 && isInsideCanvas && currentPiece) {
     const direction = touch.clientX < rect.left + rect.width / 2 ? 'counterclockwise' : 'clockwise';
     console.log(`Tap: ${direction}`);
     if (touch.clientX < rect.left + rect.width / 2) {
@@ -324,6 +339,7 @@ canvas.addEventListener('touchend', (e) => {
   }
   dropInterval = 1000;
   isSwiping = false;
+  startTouchCount = 0;
   draw();
 });
 
