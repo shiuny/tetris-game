@@ -35,7 +35,7 @@ const PIECES = [
   [[1, 1, 1], [1, 0, 0]]  // L
 ];
 
-const COLORS = ['#00b7eb', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00']; // 青を明るいシアンに
+const COLORS = ['#00b7eb', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00'];
 
 function createPiece() {
   const index = Math.floor(Math.random() * PIECES.length);
@@ -54,7 +54,7 @@ function draw() {
       if (board[y][x]) {
         ctx.fillStyle = board[y][x];
         ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-        ctx.strokeStyle = '#fff'; // 白い境界線
+        ctx.strokeStyle = '#fff';
         ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
       }
     }
@@ -65,7 +65,7 @@ function draw() {
       for (let x = 0; x < currentPiece.shape[y].length; x++) {
         if (currentPiece.shape[y][x]) {
           ctx.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-          ctx.strokeStyle = '#fff'; // 白い境界線
+          ctx.strokeStyle = '#fff';
           ctx.strokeRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
         }
       }
@@ -84,7 +84,7 @@ function drawNextPiece() {
       for (let x = 0; x < nextPiece.shape[y].length; x++) {
         if (nextPiece.shape[y][x]) {
           nextCtx.fillRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
-          nextCtx.strokeStyle = '#fff'; // 白い境界線
+          nextCtx.strokeStyle = '#fff';
           nextCtx.strokeRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
         }
       }
@@ -214,7 +214,7 @@ function update(time = 0) {
 
 // ボタンイベント
 playPauseButton.addEventListener('click', () => {
-  console.log('Play/Pause clicked'); // デバッグ
+  console.log('Play/Pause clicked');
   isPlaying = !isPlaying;
   playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
   if (isPlaying) {
@@ -237,17 +237,17 @@ playPauseButton.addEventListener('click', () => {
 });
 
 resetButton.addEventListener('click', () => {
-  console.log('Reset clicked'); // デバッグ
+  console.log('Reset clicked');
   resetGame();
 });
 
 helpButton.addEventListener('click', () => {
-  console.log('Help clicked'); // デバッグ
+  console.log('Help clicked');
   helpModal.classList.remove('hidden');
 });
 
 closeHelpButton.addEventListener('click', () => {
-  console.log('Close Help clicked'); // デバッグ
+  console.log('Close Help clicked');
   helpModal.classList.add('hidden');
 });
 
@@ -256,9 +256,16 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
 let isSwiping = false;
+let touchCount = 0;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
+  touchCount = e.touches.length;
+  console.log(`Touch start: ${touchCount} finger(s)`); // デバッグ
+  if (touchCount !== 1) {
+    isSwiping = true; // 2本指以上はスワイプ扱い
+    return;
+  }
   isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
@@ -268,6 +275,7 @@ canvas.addEventListener('touchstart', (e) => {
 
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
+  if (touchCount !== 1) return; // 1本指のみ処理
   isSwiping = true;
   const touch = e.touches[0];
   const deltaX = touch.clientX - touchStartX;
@@ -276,9 +284,11 @@ canvas.addEventListener('touchmove', (e) => {
     currentPiece.x += deltaX > 0 ? 1 : -1;
     if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
     touchStartX = touch.clientX;
+    console.log(`Swipe move: x=${currentPiece.x}`);
   }
   if (deltaY > 30 && currentPiece) {
     if (e.touches.length === 2) {
+      console.log('Two-finger swipe: Instant drop');
       while (!collides()) currentPiece.y++;
       currentPiece.y--;
       merge();
@@ -286,16 +296,21 @@ canvas.addEventListener('touchmove', (e) => {
       currentPiece = null;
     } else {
       dropInterval = 100;
+      console.log('Single swipe down: Faster drop');
     }
   }
 });
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
+  isSwiping = false; // 状態リセット
   const touchDuration = Date.now() - touchStartTime;
-  if (!isSwiping && touchDuration < 200 && e.changedTouches.length === 1 && currentPiece) {
+  console.log(`Touch end: duration=${touchDuration}ms, touches=${e.changedTouches.length}`); // デバッグ
+  if (touchCount === 1 && touchDuration < 250 && currentPiece) {
     const touch = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
+    const direction = touch.clientX < rect.left + rect.width / 2 ? 'counterclockwise' : 'clockwise';
+    console.log(`Tap: ${direction}`); // デバッグ
     if (touch.clientX < rect.left + rect.width / 2) {
       rotatePiece(false);
     } else {
@@ -303,14 +318,14 @@ canvas.addEventListener('touchend', (e) => {
     }
   }
   dropInterval = 1000;
-  isSwiping = false;
+  touchCount = 0;
   draw();
 });
 
 // キーイベント
 document.addEventListener('keydown', e => {
-  e.preventDefault(); // 全てのキーイベントでデフォルト動作を抑制
-  console.log(`Key pressed: ${e.key}`); // デバッグ
+  e.preventDefault();
+  console.log(`Key pressed: ${e.key}`);
   if (e.key === 'Escape') {
     helpModal.classList.add('hidden');
     return;
@@ -329,18 +344,18 @@ document.addEventListener('keydown', e => {
     if (collides()) currentPiece.y--;
     dropCounter = 0;
   } else if (e.key === ' ') {
-    console.log('Spacebar: Instant drop'); // デバッグ
+    console.log('Spacebar: Instant drop');
     while (!collides()) currentPiece.y++;
     currentPiece.y--;
     merge();
     clearLines();
     currentPiece = null;
     draw();
-    return; // 一時停止防止
+    return;
   } else if (e.key === 'p') {
-    console.log('P: Toggle play/pause'); // デバッグ
+    console.log('P: Toggle play/pause');
     isPlaying = !isPlaying;
-    playPauseButton.textContent = isPlaying ? '⏸️' : '▶';
+    playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
     if (isPlaying) {
       if (!currentPiece) {
         currentPiece = nextPiece;

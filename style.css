@@ -17,7 +17,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .score {
@@ -35,19 +35,20 @@ body {
 }
 
 .controls button:hover {
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 .game-area {
   display: flex;
-  gap: 10px;
+  flex-direction: row; /* 全てのデバイスで右配置 */
+  gap: 15px;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center; /* 縦中央揃え */
 }
 
 #tetris, #next-piece {
   border: 2px solid #333;
-  background: #111; /* 黒から暗グレーへ */
+  background: #222; /* 視認性向上のためやや明るいグレー */
 }
 
 .modal {
@@ -77,9 +78,6 @@ body {
 }
 
 @media (max-width: 600px) {
-  .game-area {
-    flex-direction: row;
-  }
   #tetris {
     width: 200px;
     height: 400px;
@@ -88,12 +86,19 @@ body {
     width: 80px;
     height: 80px;
   }
+  .header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .score {
+    font-size: 16px;
+  }
+  .controls button {
+    font-size: 20px;
+  }
 }
 
 @media (min-width: 601px) {
-  .game-area {
-    flex-direction: column;
-  }
   #tetris {
     width: 250px;
     height: 500px;
