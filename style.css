@@ -29,8 +29,9 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: clamp(20px, 5vw, 24px);
+  font-size: clamp(20px, 6vw, 26px);
   padding: 8px;
+  touch-action: manipulation;
   transition: transform 0.2s;
 }
 
