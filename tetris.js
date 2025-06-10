@@ -256,16 +256,12 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
 let isSwiping = false;
-let touchCount = 0;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
-  touchCount = e.touches.length;
-  console.log(`Touch start: ${touchCount} finger(s)`); // デバッグ
-  if (touchCount !== 1) {
-    isSwiping = true; // 2本指以上はスワイプ扱い
-    return;
-  }
+  const touchCount = e.touches.length;
+  console.log(`Touch start: ${touchCount} finger(s), x=${e.touches[0].clientX}, y=${e.touches[0].clientY}`);
+  if (touchCount > 2) return; // 3本指以上は無視
   isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
@@ -275,42 +271,51 @@ canvas.addEventListener('touchstart', (e) => {
 
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
-  if (touchCount !== 1) return; // 1本指のみ処理
-  isSwiping = true;
+  const touchCount = e.touches.length;
+  const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
+  const isInsideCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+  console.log(`Touch move: ${touchCount} finger(s), x=${touch.clientX}, y=${touch.clientY}, inside=${isInsideCanvas}`);
+  if (!isInsideCanvas) return; // キャンバス外は無視
+  isSwiping = true;
   const deltaX = touch.clientX - touchStartX;
   const deltaY = touch.clientY - touchStartY;
-  if (Math.abs(deltaX) > 30 && currentPiece) {
-    currentPiece.x += deltaX > 0 ? 1 : -1;
-    if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
-    touchStartX = touch.clientX;
-    console.log(`Swipe move: x=${currentPiece.x}`);
-  }
-  if (deltaY > 30 && currentPiece) {
-    if (e.touches.length === 2) {
+  if (touchCount === 1 && currentPiece) {
+    if (Math.abs(deltaX) > 30) {
+      currentPiece.x += deltaX > 0 ? 1 : -1;
+      if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
+      touchStartX = touch.clientX;
+      console.log(`Swipe move: x=${currentPiece.x}`);
+    }
+    if (deltaY > 20) {
+      dropInterval = 100;
+      console.log('Single swipe down: Faster drop');
+    }
+  } else if (touchCount === 2 && currentPiece) {
+    if (deltaY > 20) {
       console.log('Two-finger swipe: Instant drop');
       while (!collides()) currentPiece.y++;
       currentPiece.y--;
       merge();
       clearLines();
       currentPiece = null;
-    } else {
-      dropInterval = 100;
-      console.log('Single swipe down: Faster drop');
     }
   }
 });
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
-  isSwiping = false; // 状態リセット
+  const touchCount = e.changedTouches.length;
   const touchDuration = Date.now() - touchStartTime;
-  console.log(`Touch end: duration=${touchDuration}ms, touches=${e.changedTouches.length}`); // デバッグ
-  if (touchCount === 1 && touchDuration < 250 && currentPiece) {
-    const touch = e.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
+  const touch = e.changedTouches[0];
+  const rect = canvas.getBoundingClientRect();
+  const isInsideCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+  console.log(`Touch end: ${touchCount} finger(s), duration=${touchDuration}ms, x=${touch.clientX}, inside=${isInsideCanvas}`);
+  if (!isSwiping && touchDuration < 250 && isInsideCanvas && currentPiece) {
     const direction = touch.clientX < rect.left + rect.width / 2 ? 'counterclockwise' : 'clockwise';
-    console.log(`Tap: ${direction}`); // デバッグ
+    console.log(`Tap: ${direction}`);
     if (touch.clientX < rect.left + rect.width / 2) {
       rotatePiece(false);
     } else {
@@ -318,7 +323,7 @@ canvas.addEventListener('touchend', (e) => {
     }
   }
   dropInterval = 1000;
-  touchCount = 0;
+  isSwiping = false;
   draw();
 });
 

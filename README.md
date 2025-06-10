@@ -3,11 +3,11 @@
 A simple Tetris game built with HTML5, CSS, and JavaScript. Playable on smartphones, tablets, and PCs.
 
 ## Features
-- **Responsive**: Optimized for mobile (21:9), tablet (4:3), and desktop with unified row layout.
+- **Responsive**: Optimized for mobile (21:9), tablet (4:3, old/new iPads), and desktop with unified row layout.
 - **Controls**:
-  - **Mobile/Tablet**: Swipe left/right to move, single-tap left/right to rotate, swipe down for faster drop, two-finger swipe for instant drop.
-  - **PC**: Arrow keys (←/→ move, ↑ rotate, ↓ faster drop), spacebar for instant drop, P for play/pause, R for reset, Esc to close help.
-- **UI**: Score, high score, play/pause (▶️/⏸️), reset (🔄), help (❓) buttons, next piece preview (right-aligned on all devices).
+  - **Mobile/Tablet**: Single-tap left/right for rotation, single-swipe left/right to move, two-finger swipe down for instant drop.
+  - **PC**: Arrow keys (←/→ move, ↑, ↓ faster drop), spacebar for instant drop, P for play/pause, R for reset, Esc to close help.
+- **UI**: Score, high score, play/pause (▶/⏩), reset (🔄), help (✔), next piece (right-aligned).
 - **Design**: Flex row layout, dark grey canvas, high-contrast pieces with white borders.
 - **Persistence**: High score saved via localStorage.
 
@@ -17,4 +17,4 @@ A simple Tetris game built with HTML5, CSS, and JavaScript. Playable on smartpho
 3. Visit `https://<username>.github.io/<repository-name>`.
 
 ## License
-MIT
+- MIT
