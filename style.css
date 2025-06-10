@@ -40,17 +40,13 @@ body {
 }
 
 .game-area {
-  display: grid;
+  display: flex;
   gap: 10px;
   justify-content: center;
+  align-items: flex-start;
 }
 
-#tetris {
-  border: 2px solid #333;
-  background: #000;
-}
-
-#next-piece {
+#tetris, #next-piece {
   border: 2px solid #333;
   background: #000;
 }
@@ -83,7 +79,7 @@ body {
 
 @media (max-width: 600px) {
   .game-area {
-    grid-template-columns: auto auto;
+    flex-direction: row;
     align-items: center;
   }
   #tetris {
@@ -98,8 +94,7 @@ body {
 
 @media (min-width: 601px) {
   .game-area {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    flex-direction: column;
   }
   #tetris {
     max-width: 400px;
