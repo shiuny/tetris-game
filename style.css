@@ -21,7 +21,7 @@ body {
 }
 
 .score {
-  font-size: clamp(16px, 5vw, 20px);
+  font-size: 18px;
   font-weight: bold;
 }
 
@@ -29,10 +29,9 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: clamp(20px, 6vw, 26px);
-  padding: 8px;
+  font-size: 24px;
+  padding: 5px;
   touch-action: manipulation;
-  transition: transform 0.2s;
 }
 
 .controls button:hover {
@@ -48,7 +47,7 @@ body {
 
 #tetris, #next-piece {
   border: 2px solid #333;
-  background: #000;
+  background: #111; /* 黒から暗グレーへ */
 }
 
 .modal {
@@ -80,11 +79,10 @@ body {
 @media (max-width: 600px) {
   .game-area {
     flex-direction: row;
-    align-items: center;
   }
   #tetris {
-    max-width: 90vw;
-    max-height: 55vh;
+    width: 200px;
+    height: 400px;
   }
   #next-piece {
     width: 80px;
@@ -97,8 +95,8 @@ body {
     flex-direction: column;
   }
   #tetris {
-    max-width: 400px;
-    max-height: 800px;
+    width: 250px;
+    height: 500px;
   }
   #next-piece {
     width: 100px;

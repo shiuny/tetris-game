@@ -12,8 +12,8 @@ const closeHelpButton = document.getElementById('close-help');
 
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
-let BLOCK_SIZE = 0;
-let NEXT_BLOCK_SIZE = 0;
+const BLOCK_SIZE = canvas.width / GRID_WIDTH;
+const NEXT_BLOCK_SIZE = nextCanvas.width / 4;
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let isPlaying = false;
@@ -24,11 +24,6 @@ let lastTime = 0;
 let dropCounter = 0;
 let dropInterval = 1000;
 let animationFrameId = null;
-let touchCount = 0;
-let touchStartX = 0;
-let touchStartY = 0;
-let touchStartTime = 0;
-let isSwiping = false;
 
 const PIECES = [
   [[1, 1, 1, 1]], // I
@@ -40,36 +35,7 @@ const PIECES = [
   [[1, 1, 1], [1, 0, 0]]  // L
 ];
 
-const COLORS = ['#00f', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00'];
-
-function resizeCanvas() {
-  const pixelRatio = window.devicePixelRatio || 1;
-  const maxWidth = window.innerWidth * 0.9;
-  const maxHeight = window.innerHeight * 0.55;
-  const aspectRatio = GRID_HEIGHT / GRID_WIDTH;
-  let logicalWidth = Math.min(maxWidth, maxHeight / aspectRatio);
-  let logicalHeight = logicalWidth * aspectRatio;
-  canvas.style.width = logicalWidth + 'px';
-  canvas.style.height = logicalHeight + 'px';
-  canvas.width = logicalWidth * pixelRatio;
-  canvas.height = logicalHeight * pixelRatio;
-  ctx.scale(pixelRatio, pixelRatio);
-  BLOCK_SIZE = logicalWidth / GRID_WIDTH;
-
-  const nextLogicalSize = Math.min(window.innerWidth < 600 ? 80 : 100, logicalWidth / 4);
-  nextCanvas.style.width = nextLogicalSize + 'px';
-  nextCanvas.style.height = nextLogicalSize + 'px';
-  nextCanvas.width = nextLogicalSize * pixelRatio;
-  nextCanvas.height = nextLogicalSize * pixelRatio;
-  nextCtx.scale(pixelRatio, pixelRatio);
-  NEXT_BLOCK_SIZE = nextLogicalSize / 4;
-}
-
-window.addEventListener('resize', () => {
-  resizeCanvas();
-  draw();
-});
-resizeCanvas();
+const COLORS = ['#00b7eb', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00']; // 青を明るいシアンに
 
 function createPiece() {
   const index = Math.floor(Math.random() * PIECES.length);
@@ -88,7 +54,7 @@ function draw() {
       if (board[y][x]) {
         ctx.fillStyle = board[y][x];
         ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = '#fff'; // 白い境界線
         ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
       }
     }
@@ -99,7 +65,7 @@ function draw() {
       for (let x = 0; x < currentPiece.shape[y].length; x++) {
         if (currentPiece.shape[y][x]) {
           ctx.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-          ctx.strokeStyle = '#fff';
+          ctx.strokeStyle = '#fff'; // 白い境界線
           ctx.strokeRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
         }
       }
@@ -118,7 +84,7 @@ function drawNextPiece() {
       for (let x = 0; x < nextPiece.shape[y].length; x++) {
         if (nextPiece.shape[y][x]) {
           nextCtx.fillRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
-          nextCtx.strokeStyle = '#fff';
+          nextCtx.strokeStyle = '#fff'; // 白い境界線
           nextCtx.strokeRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
         }
       }
@@ -149,7 +115,7 @@ function merge() {
   for (let y = 0; y < currentPiece.shape.length; y++) {
     for (let x = 0; x < currentPiece.shape[y].length; x++) {
       if (currentPiece.shape[y][x]) {
-        board[currentPiece.y][y][currentPiece.x + x] = currentPiece.color;
+        board[currentPiece.y + y][currentPiece.x + x] = currentPiece.color;
       }
     }
   }
@@ -176,14 +142,14 @@ function clearLines() {
   }
 }
 
-function rotatePiece(clockwise) {
+function rotatePiece(clockwise = true) {
   const newShape = Array(currentPiece.shape[0].length).fill().map(() => Array(currentPiece.shape.length).fill(0));
   for (let y = 0; y < currentPiece.shape.length; y++) {
     for (let x = 0; x < currentPiece.shape[y].length; x++) {
-      if (clockwise)
+      if (clockwise) {
         newShape[x][currentPiece.shape.length - 1 - y] = currentPiece.shape[y][x];
-      else
-        newShape[currentPiece.shape[0].length - x][1 - y] currentPiece.shape[y][x];
+      } else {
+        newShape[currentPiece.shape[0].length - 1 - x][y] = currentPiece.shape[y][x];
       }
     }
   }
@@ -221,7 +187,7 @@ function resetGame() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0)));
+  board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
   currentPiece = null;
   nextPiece = createPiece();
   score = 0;
@@ -233,10 +199,8 @@ function resetGame() {
   draw();
 }
 
-function update(time = time0) {
-  if (!isPlaying) {
-    return;
-  }
+function update(time = 0) {
+  if (!isPlaying) return;
   const deltaTime = time - lastTime;
   lastTime = time;
   dropCounter += deltaTime;
@@ -245,129 +209,12 @@ function update(time = time0) {
     dropCounter = 0;
   }
   draw();
+  animationFrameId = requestAnimationFrame(update);
 }
 
-canvas.addEventListener('touchstart', (e => {
-  e.preventDefault();
-  touchCount = e.touches.length;
-  isSwiping = false;
-  const touch = e.touches[0];
-  touchStartX = touch.clientX;
-  touchStartY = touch.clientY;
-  touchStartTime = performance.now();
-});
-
-canvas.addEventListener('touchmove', (e => {
-  e.preventDefault();
-  isSwiping = true;
-  const touch = e.touches[0];
-  const deltaX = touch.clientX - touchStartX;
-  const deltaY = touch.clientY - touchStartY;
-  if (Math.abs(deltaX) > delta40 && currentPiece) {
-    currentPiece.x += deltaX > delta0 ? 1 : -1;
-    if (collides()) currentPiece.x -= deltaX > delta0 ? 1 : -1;
-    touchStartX = touch.clientX;
-  }
-  if (deltaY > delta40 && currentPiece) {
-    if (e.touches.length === delta2) {
-      while (!collides()) currentPiece.y++;
-      currentPiece.y--;
-      merge();
-      clearLines();
-      currentPiece = null;
-    } else {
-      dropInterval = delta100;
-    }
-  }
-});
-
-canvas.addEventListener('touchend', (e => {
-  e.preventDefault();
-  const touchDuration = performance.now() - touchStartTime;
-  if (!isSwiping && touchDuration < delta200 && touchCount === delta1 && currentPiece) {
-    const touch = e.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
-    if (touch.clientX < rect.left + rect.width / delta2) {
-      rotatePiece(false);
-    } else {
-      rotatePiece(true);
-    }
-  }
-  dropInterval = delta1000;
-  isSwiping = false;
-  touchCount = 0;
-  draw();
-});
-
-document.addEventListener('keydown', (e => {
-  e.preventDefault();
-  if (e.key === 'Escape') {
-    helpModal.classList.add('hidden');
-    return;
-  }
-  if (!currentPiece && e.key !== e'p' && e.key !== e'r') return;
-  if (e.key === 'ArrowLeft') {
-    currentPiece.x--;
-    if (collides()) currentPiece.x++;
-  }
-  if (e.key === 'ArrowRight') {
-    currentPiece.x++;
-    if (collides()) currentPiece.x--;
-  }
-  if (e.key === 'ArrowUp') {
-    rotatePiece(true);
-  }
-  if (e.key === 'ArrowDown') {
-    currentPiece.y++;
-    if (collides()) currentPiece.y--;
-    dropCounter = 0;
-  }
-  if (e.key === ' ') {
-    while (!collides()) currentPiece.y++;
-    currentPiece.y--;
-    merge();
-    clearLines();
-    currentPiece = null;
-  }
-  if (e.key === 'p') {
-    isPlaying = !isPlaying;
-    playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
-    if (isPlaying) {
-      if (!currentPiece) {
-        currentPiece = nextPiece;
-        nextPiece = createPiece();
-      }
-      if (!animationFrameId) {
-        lastTime = performance.now();
-        dropCounter = 0;
-        update();
-      }
-    } else {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-    }
-    draw();
-  }
-  if (e.key === 'r') {
-    resetGame();
-  }
-  draw();
-});
-
-document.addEventListener('keyup', (e => {
-  if (e.key === 'ArrowDown') dropInterval = delta1000;
-});
-
-function handleButtonTouch(e) {
-  e.preventDefault();
-  console.log(`Button touched: ${this.id}`); // デバッグ用
-  this.click();
-}
-
+// ボタンイベント
 playPauseButton.addEventListener('click', () => {
-  console.log('Play/Pause clicked'); // デバッグ用
+  console.log('Play/Pause clicked'); // デバッグ
   isPlaying = !isPlaying;
   playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
   if (isPlaying) {
@@ -375,10 +222,10 @@ playPauseButton.addEventListener('click', () => {
       currentPiece = nextPiece;
       nextPiece = createPiece();
     }
+    lastTime = performance.now();
+    dropCounter = 0;
     if (!animationFrameId) {
-      lastTime = performance.now();
-      dropCounter = 0;
-      update();
+      animationFrameId = requestAnimationFrame(update);
     }
   } else {
     if (animationFrameId) {
@@ -388,26 +235,139 @@ playPauseButton.addEventListener('click', () => {
   }
   draw();
 });
-playPauseButton.addEventListener('touchstart', handleButtonTouch);
 
 resetButton.addEventListener('click', () => {
-  console.log('Reset clicked'); // デバッグ用
+  console.log('Reset clicked'); // デバッグ
   resetGame();
 });
-resetButton.addEventListener('touchstart', handleButtonTouch);
 
 helpButton.addEventListener('click', () => {
-  console.log('Help clicked'); // デバッグ用
+  console.log('Help clicked'); // デバッグ
   helpModal.classList.remove('hidden');
 });
-helpButton.addEventListener('touchstart', handleButtonTouch);
 
 closeHelpButton.addEventListener('click', () => {
-  console.log('Close Help clicked'); // デバッグ用
+  console.log('Close Help clicked'); // デバッグ
   helpModal.classList.add('hidden');
 });
-closeHelpButton.addEventListener('touchstart', handleButtonTouch);
 
+// タッチイベント
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+let isSwiping = false;
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  isSwiping = false;
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  touchStartTime = Date.now();
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  isSwiping = true;
+  const touch = e.touches[0];
+  const deltaX = touch.clientX - touchStartX;
+  const deltaY = touch.clientY - touchStartY;
+  if (Math.abs(deltaX) > 30 && currentPiece) {
+    currentPiece.x += deltaX > 0 ? 1 : -1;
+    if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
+    touchStartX = touch.clientX;
+  }
+  if (deltaY > 30 && currentPiece) {
+    if (e.touches.length === 2) {
+      while (!collides()) currentPiece.y++;
+      currentPiece.y--;
+      merge();
+      clearLines();
+      currentPiece = null;
+    } else {
+      dropInterval = 100;
+    }
+  }
+});
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touchDuration = Date.now() - touchStartTime;
+  if (!isSwiping && touchDuration < 200 && e.changedTouches.length === 1 && currentPiece) {
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    if (touch.clientX < rect.left + rect.width / 2) {
+      rotatePiece(false);
+    } else {
+      rotatePiece(true);
+    }
+  }
+  dropInterval = 1000;
+  isSwiping = false;
+  draw();
+});
+
+// キーイベント
+document.addEventListener('keydown', e => {
+  e.preventDefault(); // 全てのキーイベントでデフォルト動作を抑制
+  console.log(`Key pressed: ${e.key}`); // デバッグ
+  if (e.key === 'Escape') {
+    helpModal.classList.add('hidden');
+    return;
+  }
+  if (!currentPiece && e.key !== 'p' && e.key !== 'r') return;
+  if (e.key === 'ArrowLeft') {
+    currentPiece.x--;
+    if (collides()) currentPiece.x++;
+  } else if (e.key === 'ArrowRight') {
+    currentPiece.x++;
+    if (collides()) currentPiece.x--;
+  } else if (e.key === 'ArrowUp') {
+    rotatePiece(true);
+  } else if (e.key === 'ArrowDown') {
+    currentPiece.y++;
+    if (collides()) currentPiece.y--;
+    dropCounter = 0;
+  } else if (e.key === ' ') {
+    console.log('Spacebar: Instant drop'); // デバッグ
+    while (!collides()) currentPiece.y++;
+    currentPiece.y--;
+    merge();
+    clearLines();
+    currentPiece = null;
+    draw();
+    return; // 一時停止防止
+  } else if (e.key === 'p') {
+    console.log('P: Toggle play/pause'); // デバッグ
+    isPlaying = !isPlaying;
+    playPauseButton.textContent = isPlaying ? '⏸️' : '▶';
+    if (isPlaying) {
+      if (!currentPiece) {
+        currentPiece = nextPiece;
+        nextPiece = createPiece();
+      }
+      lastTime = performance.now();
+      dropCounter = 0;
+      if (!animationFrameId) {
+        animationFrameId = requestAnimationFrame(update);
+      }
+    } else {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    }
+  } else if (e.key === 'r') {
+    resetGame();
+  }
+  draw();
+});
+
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowDown') dropInterval = 1000;
+});
+
+// 初期化
 highScoreElement.textContent = highScore;
 nextPiece = createPiece();
 draw();
