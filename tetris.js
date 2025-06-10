@@ -1,21 +1,29 @@
 const canvas = document.getElementById('tetris');
 const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('next-piece');
+const nextCtx = nextCanvas.getContext('2d');
 const scoreElement = document.getElementById('score');
+const highScoreElement = document.getElementById('high-score');
 const playPauseButton = document.getElementById('play-pause');
+const resetButton = document.getElementById('reset');
 const helpButton = document.getElementById('help');
 const helpModal = document.getElementById('help-modal');
 const closeHelpButton = document.getElementById('close-help');
 
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
-const BLOCK_SIZE = canvas.width / GRID_WIDTH;
+let BLOCK_SIZE = 0; // 動的に計算
+const NEXT_BLOCK_SIZE = nextCanvas.width / 4;
 let score = 0;
+let highScore = localStorage.getItem('highScore') || 0;
 let isPlaying = false;
 let board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
 let currentPiece = null;
+let nextPiece = null;
 let lastTime = 0;
 let dropCounter = 0;
 let dropInterval = 1000;
+let animationFrameId = null;
 
 const PIECES = [
   [[1, 1, 1, 1]], // I
@@ -29,10 +37,25 @@ const PIECES = [
 
 const COLORS = ['#00f', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00'];
 
+function resizeCanvas() {
+  const maxWidth = window.innerWidth * 0.9;
+  const maxHeight = window.innerHeight * 0.6;
+  const aspectRatio = GRID_HEIGHT / GRID_WIDTH;
+  canvas.width = Math.min(maxWidth, maxHeight / aspectRatio);
+  canvas.height = canvas.width * aspectRatio;
+  BLOCK_SIZE = canvas.width / GRID_WIDTH;
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  draw();
+});
+resizeCanvas();
+
 function createPiece() {
   const index = Math.floor(Math.random() * PIECES.length);
   return {
-    shape: PIECES[index],
+    shape: PIECES[index].map(row => [...row]),
     color: COLORS[index],
     x: Math.floor(GRID_WIDTH / 2) - Math.floor(PIECES[index][0].length / 2),
     y: 0
@@ -59,6 +82,25 @@ function draw() {
           ctx.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
           ctx.strokeStyle = '#fff';
           ctx.strokeRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+        }
+      }
+    }
+  }
+  drawNextPiece();
+}
+
+function drawNextPiece() {
+  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  if (nextPiece) {
+    nextCtx.fillStyle = nextPiece.color;
+    const offsetX = (4 - nextPiece.shape[0].length) / 2;
+    const offsetY = (4 - nextPiece.shape.length) / 2;
+    for (let y = 0; y < nextPiece.shape.length; y++) {
+      for (let x = 0; x < nextPiece.shape[y].length; x++) {
+        if (nextPiece.shape[y][x]) {
+          nextCtx.fillRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
+          nextCtx.strokeStyle = '#fff';
+          nextCtx.strokeRect((x + offsetX) * NEXT_BLOCK_SIZE, (y + offsetY) * NEXT_BLOCK_SIZE, NEXT_BLOCK_SIZE - 1, NEXT_BLOCK_SIZE - 1);
         }
       }
     }
@@ -106,6 +148,11 @@ function clearLines() {
   }
   if (linesCleared > 0) {
     score += linesCleared * 100;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('highScore', highScore);
+      highScoreElement.textContent = highScore;
+    }
     scoreElement.textContent = score;
   }
 }
@@ -124,20 +171,19 @@ function rotatePiece(clockwise) {
   const oldShape = currentPiece.shape;
   currentPiece.shape = newShape;
   if (collides()) {
-    currentPiece.shape = oldShape; // 回転できない場合は元に戻す
+    currentPiece.shape = oldShape;
   }
 }
 
 function dropPiece() {
   if (!currentPiece) {
-    currentPiece = createPiece();
+    currentPiece = nextPiece || createPiece();
+    nextPiece = createPiece();
     if (collides()) {
       isPlaying = false;
       playPauseButton.textContent = '▶️';
       alert('Game Over!');
-      board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
-      score = 0;
-      scoreElement.textContent = score;
+      resetGame();
     }
   }
   currentPiece.y++;
@@ -149,49 +195,58 @@ function dropPiece() {
   }
 }
 
+function resetGame() {
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
+  currentPiece = null;
+  nextPiece = createPiece();
+  score = 0;
+  scoreElement.textContent = score;
+  highScoreElement.textContent = highScore;
+  isPlaying = false;
+  playPauseButton.textContent = '▶️';
+  draw();
+}
+
 function update(time = 0) {
-  if (isPlaying) {
-    const deltaTime = time - lastTime;
-    lastTime = time;
-    dropCounter += deltaTime;
-    if (dropCounter > dropInterval) {
-      dropPiece();
-      dropCounter = 0;
-    }
-    draw();
-    requestAnimationFrame(update);
+  if (!isPlaying) return;
+  const deltaTime = time - lastTime;
+  lastTime = time;
+  dropCounter += deltaTime;
+  if (dropCounter > dropInterval) {
+    dropPiece();
+    dropCounter = 0;
   }
+  draw();
+  animationFrameId = requestAnimationFrame(update);
 }
 
 let touchStartX = 0;
 let touchStartY = 0;
+let touchStartTime = 0;
+let isSwiping = false;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
+  isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
   touchStartY = touch.clientY;
-  if (e.touches.length === 1) {
-    const rect = canvas.getBoundingClientRect();
-    if (touch.clientX < rect.left + rect.width / 2) {
-      rotatePiece(false); // 左タップで反時計回り
-    } else {
-      rotatePiece(true); // 右タップで時計回り
-    }
-  }
+  touchStartTime = Date.now();
 });
 
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
+  isSwiping = true;
   const touch = e.touches[0];
   const deltaX = touch.clientX - touchStartX;
   const deltaY = touch.clientY - touchStartY;
-  if (Math.abs(deltaX) > 50 && currentPiece) {
+  if (Math.abs(deltaX) > 40 && currentPiece) {
     currentPiece.x += deltaX > 0 ? 1 : -1;
     if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
     touchStartX = touch.clientX;
   }
-  if (deltaY > 50 && currentPiece) {
+  if (deltaY > 40 && currentPiece) {
     if (e.touches.length === 2) {
       while (!collides()) currentPiece.y++;
       currentPiece.y--;
@@ -204,12 +259,29 @@ canvas.addEventListener('touchmove', (e) => {
   }
 });
 
-canvas.addEventListener('touchend', () => {
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touchDuration = Date.now() - touchStartTime;
+  if (!isSwiping && touchDuration < 200 && e.changedTouches.length === 1 && currentPiece) {
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    if (touch.clientX < rect.left + rect.width / 2) {
+      rotatePiece(false);
+    } else {
+      rotatePiece(true);
+    }
+  }
   dropInterval = 1000;
+  isSwiping = false;
 });
 
 document.addEventListener('keydown', (e) => {
-  if (!currentPiece || !isPlaying) return;
+  e.preventDefault();
+  if (e.key === 'Escape') {
+    helpModal.classList.add('hidden');
+    return;
+  }
+  if (!currentPiece && e.key !== 'p' && e.key !== 'r') return;
   if (e.key === 'ArrowLeft') {
     currentPiece.x--;
     if (collides()) currentPiece.x++;
@@ -219,19 +291,31 @@ document.addEventListener('keydown', (e) => {
     if (collides()) currentPiece.x--;
   }
   if (e.key === 'ArrowUp') {
-    rotatePiece(true); // ↑で時計回り回転
+    rotatePiece(true);
   }
   if (e.key === 'ArrowDown') {
-    currentPiece.y++; // ↓で1マス下に移動
+    currentPiece.y++;
     if (collides()) currentPiece.y--;
-    dropCounter = 0; // 自然落下をリセット
+    dropCounter = 0;
   }
   if (e.key === ' ') {
-    while (!collides()) currentPiece.y++; // スペースで即時落下
+    while (!collides()) currentPiece.y++;
     currentPiece.y--;
     merge();
     clearLines();
     currentPiece = null;
+  }
+  if (e.key === 'p') {
+    isPlaying = !isPlaying;
+    playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
+    if (isPlaying && !currentPiece) {
+      currentPiece = nextPiece;
+      nextPiece = createPiece();
+    }
+    if (isPlaying && !animationFrameId) update();
+  }
+  if (e.key === 'r') {
+    resetGame();
   }
 });
 
@@ -242,8 +326,15 @@ document.addEventListener('keyup', (e) => {
 playPauseButton.addEventListener('click', () => {
   isPlaying = !isPlaying;
   playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
-  if (isPlaying && !currentPiece) currentPiece = createPiece();
-  if (isPlaying) update();
+  if (isPlaying && !currentPiece) {
+    currentPiece = nextPiece;
+    nextPiece = createPiece();
+  }
+  if (isPlaying && !animationFrameId) update();
+});
+
+resetButton.addEventListener('click', () => {
+  resetGame();
 });
 
 helpButton.addEventListener('click', () => {
@@ -254,4 +345,6 @@ closeHelpButton.addEventListener('click', () => {
   helpModal.classList.add('hidden');
 });
 
+highScoreElement.textContent = highScore;
+nextPiece = createPiece();
 draw();
