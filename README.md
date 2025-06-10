@@ -8,7 +8,7 @@ A simple Tetris game built with HTML5, CSS, and JavaScript. Playable on smartpho
   - **Mobile/Tablet**: Swipe left/right to move, tap left/right to rotate (counterclockwise/clockwise), swipe down for faster drop, two-finger swipe down for instant drop.
   - **PC**: Arrow keys (←/→ for left/right, ↑ for rotation, ↓ for faster drop), spacebar for instant drop, P for play/pause, R for reset, Esc to close help modal.
 - **UI**: Score and high score display, play/pause button (▶️/⏸️), reset button (🔄), help button (❓) with control instructions in a popup modal, next piece preview.
-- **Design**: 3D-like blocks with shadows, optimized layout for all devices.
+- **Design**: 3D-like blocks with shadows, grid-based layout for stable positioning.
 - **Persistence**: High score saved via localStorage.
 
 ## Deployment
