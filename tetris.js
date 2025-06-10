@@ -12,7 +12,7 @@ const closeHelpButton = document.getElementById('close-help');
 
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
-let BLOCK_SIZE = 0; // 動的に計算
+let BLOCK_SIZE = 0;
 const NEXT_BLOCK_SIZE = nextCanvas.width / 4;
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
@@ -184,6 +184,7 @@ function dropPiece() {
       playPauseButton.textContent = '▶️';
       alert('Game Over!');
       resetGame();
+      return;
     }
   }
   currentPiece.y++;
@@ -193,10 +194,14 @@ function dropPiece() {
     clearLines();
     currentPiece = null;
   }
+  draw();
 }
 
 function resetGame() {
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
   board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
   currentPiece = null;
   nextPiece = createPiece();
@@ -262,7 +267,7 @@ canvas.addEventListener('touchmove', (e) => {
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   const touchDuration = Date.now() - touchStartTime;
-  if (!isSwiping && touchDuration < 200 && e.changedTouches.length === 1 && currentPiece) {
+  if (!isSwiping && touchDuration < 200 && e.touches.length === 0 && currentPiece) {
     const touch = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
     if (touch.clientX < rect.left + rect.width / 2) {
@@ -273,6 +278,7 @@ canvas.addEventListener('touchend', (e) => {
   }
   dropInterval = 1000;
   isSwiping = false;
+  draw();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -311,17 +317,27 @@ document.addEventListener('keydown', (e) => {
     if (isPlaying && !currentPiece) {
       currentPiece = nextPiece;
       nextPiece = createPiece();
+      draw();
     }
-    if (isPlaying && !animationFrameId) update();
+    if (isPlaying && !animationFrameId) {
+      lastTime = performance.now();
+      update();
+    }
   }
   if (e.key === 'r') {
     resetGame();
   }
+  draw();
 });
 
 document.addEventListener('keyup', (e) => {
   if (e.key === 'ArrowDown') dropInterval = 1000;
 });
+
+function handleButtonTouch(e) {
+  e.preventDefault();
+  this.click();
+}
 
 playPauseButton.addEventListener('click', () => {
   isPlaying = !isPlaying;
@@ -329,21 +345,29 @@ playPauseButton.addEventListener('click', () => {
   if (isPlaying && !currentPiece) {
     currentPiece = nextPiece;
     nextPiece = createPiece();
+    draw();
   }
-  if (isPlaying && !animationFrameId) update();
+  if (isPlaying && !animationFrameId) {
+    lastTime = performance.now();
+    update();
+  }
 });
+playPauseButton.addEventListener('touchstart', handleButtonTouch);
 
 resetButton.addEventListener('click', () => {
   resetGame();
 });
+resetButton.addEventListener('touchstart', handleButtonTouch);
 
 helpButton.addEventListener('click', () => {
   helpModal.classList.remove('hidden');
 });
+helpButton.addEventListener('touchstart', handleButtonTouch);
 
 closeHelpButton.addEventListener('click', () => {
   helpModal.classList.add('hidden');
 });
+closeHelpButton.addEventListener('touchstart', handleButtonTouch);
 
 highScoreElement.textContent = highScore;
 nextPiece = createPiece();
