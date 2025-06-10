@@ -12,7 +12,7 @@ A simple Tetris game built with HTML5, CSS, and JavaScript. Playable on smartpho
 - **Persistence**: High score saved via localStorage.
 
 ## Deployment
-1. Clone this repository or upload files via GitHub's web interface.
+1. Upload files via GitHub's web interface.
 2. Go to **Settings > Pages** in your repository.
 3. Set the branch to `main` and folder to `root`.
 4. Access the game at `https://<username>.github.io/<repository-name>`.
