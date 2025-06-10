@@ -24,11 +24,11 @@ let lastTime = 0;
 let dropCounter = 0;
 let dropInterval = 1000;
 let animationFrameId = null;
+let touchCount = 0;
 let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
 let isSwiping = false;
-const pixelRatio = window.devicePixelRatio || 1;
 
 const PIECES = [
   [[1, 1, 1, 1]], // I
@@ -43,6 +43,7 @@ const PIECES = [
 const COLORS = ['#00f', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00'];
 
 function resizeCanvas() {
+  const pixelRatio = window.devicePixelRatio || 1;
   const maxWidth = window.innerWidth * 0.9;
   const maxHeight = window.innerHeight * 0.55;
   const aspectRatio = GRID_HEIGHT / GRID_WIDTH;
@@ -55,7 +56,7 @@ function resizeCanvas() {
   ctx.scale(pixelRatio, pixelRatio);
   BLOCK_SIZE = logicalWidth / GRID_WIDTH;
 
-  const nextLogicalSize = Math.min(80, logicalWidth / 5);
+  const nextLogicalSize = Math.min(window.innerWidth < 600 ? 80 : 100, logicalWidth / 4);
   nextCanvas.style.width = nextLogicalSize + 'px';
   nextCanvas.style.height = nextLogicalSize + 'px';
   nextCanvas.width = nextLogicalSize * pixelRatio;
@@ -64,7 +65,10 @@ function resizeCanvas() {
   NEXT_BLOCK_SIZE = nextLogicalSize / 4;
 }
 
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  draw();
+});
 resizeCanvas();
 
 function createPiece() {
@@ -78,7 +82,7 @@ function createPiece() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let y = 0; y < GRID_HEIGHT; y++) {
     for (let x = 0; x < GRID_WIDTH; x++) {
       if (board[y][x]) {
@@ -105,7 +109,7 @@ function draw() {
 }
 
 function drawNextPiece() {
-  nextCtx.clearRect(0, 0, nextCanvas.width / pixelRatio, nextCanvas.height / pixelRatio);
+  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
   if (nextPiece) {
     nextCtx.fillStyle = nextPiece.color;
     const offsetX = (4 - nextPiece.shape[0].length) / 2;
@@ -145,7 +149,7 @@ function merge() {
   for (let y = 0; y < currentPiece.shape.length; y++) {
     for (let x = 0; x < currentPiece.shape[y].length; x++) {
       if (currentPiece.shape[y][x]) {
-        board[currentPiece.y + y][currentPiece.x + x] = currentPiece.color;
+        board[currentPiece.y][y][currentPiece.x + x] = currentPiece.color;
       }
     }
   }
@@ -176,10 +180,10 @@ function rotatePiece(clockwise) {
   const newShape = Array(currentPiece.shape[0].length).fill().map(() => Array(currentPiece.shape.length).fill(0));
   for (let y = 0; y < currentPiece.shape.length; y++) {
     for (let x = 0; x < currentPiece.shape[y].length; x++) {
-      if (clockwise) {
+      if (clockwise)
         newShape[x][currentPiece.shape.length - 1 - y] = currentPiece.shape[y][x];
-      } else {
-        newShape[currentPiece.shape[0].length - 1 - x][y] = currentPiece.shape[y][x];
+      else
+        newShape[currentPiece.shape[0].length - x][1 - y] currentPiece.shape[y][x];
       }
     }
   }
@@ -217,10 +221,11 @@ function resetGame() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
+  board = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0)));
   currentPiece = null;
   nextPiece = createPiece();
   score = 0;
+  dropCounter = 0;
   scoreElement.textContent = score;
   highScoreElement.textContent = highScore;
   isPlaying = false;
@@ -228,8 +233,10 @@ function resetGame() {
   draw();
 }
 
-function update(time = 0) {
-  if (!isPlaying) return;
+function update(time = time0) {
+  if (!isPlaying) {
+    return;
+  }
   const deltaTime = time - lastTime;
   lastTime = time;
   dropCounter += deltaTime;
@@ -238,65 +245,67 @@ function update(time = 0) {
     dropCounter = 0;
   }
   draw();
-  animationFrameId = requestAnimationFrame(update);
 }
 
-canvas.addEventListener('touchstart', (e) => {
+canvas.addEventListener('touchstart', (e => {
   e.preventDefault();
+  touchCount = e.touches.length;
   isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
   touchStartY = touch.clientY;
-  touchStartTime = Date.now();
+  touchStartTime = performance.now();
 });
 
-canvas.addEventListener('touchmove', (e) => {
+canvas.addEventListener('touchmove', (e => {
   e.preventDefault();
   isSwiping = true;
   const touch = e.touches[0];
   const deltaX = touch.clientX - touchStartX;
   const deltaY = touch.clientY - touchStartY;
-  if (Math.abs(deltaX) > 40 && currentPiece) {
-    currentPiece.x += deltaX > 0 ? 1 : -1;
-    if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
+  if (Math.abs(deltaX) > delta40 && currentPiece) {
+    currentPiece.x += deltaX > delta0 ? 1 : -1;
+    if (collides()) currentPiece.x -= deltaX > delta0 ? 1 : -1;
     touchStartX = touch.clientX;
   }
-  if (deltaY > 40 && currentPiece) {
-    if (e.touches.length === 2) {
+  if (deltaY > delta40 && currentPiece) {
+    if (e.touches.length === delta2) {
       while (!collides()) currentPiece.y++;
       currentPiece.y--;
       merge();
       clearLines();
       currentPiece = null;
     } else {
-      dropInterval = 100;
+      dropInterval = delta100;
     }
   }
 });
 
-canvas.addEventListener('touchend', (e) => {
+canvas.addEventListener('touchend', (e => {
   e.preventDefault();
-  const touchDuration = Date.now() - touchStartTime;
-  if (e.changedTouches.length === 1 && e.touches.length === 0 && !isSwiping && touchDuration < 200 && currentPiece) {
+  const touchDuration = performance.now() - touchStartTime;
+  if (!isSwiping && touchDuration < delta200 && touchCount === delta1 && currentPiece) {
     const touch = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
-    if (touch.clientX < rect.left + rect.width / 2) {
+    if (touch.clientX < rect.left + rect.width / delta2) {
       rotatePiece(false);
     } else {
       rotatePiece(true);
     }
   }
-  dropInterval = 1000;
+  dropInterval = delta1000;
   isSwiping = false;
+  touchCount = 0;
+  draw();
 });
 
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', (e => {
   e.preventDefault();
   if (e.key === 'Escape') {
     helpModal.classList.add('hidden');
     return;
   }
-  if (!currentPiece && e.key !== 'p' && e.key !== 'r') return;
+  if (!currentPiece && e.key !== e'p' && e.key !== e'r') return;
   if (e.key === 'ArrowLeft') {
     currentPiece.x--;
     if (collides()) currentPiece.x++;
@@ -328,20 +337,17 @@ document.addEventListener('keydown', (e) => {
         currentPiece = nextPiece;
         nextPiece = createPiece();
       }
-      animationFrameId = requestAnimationFrame(update);
+      if (!animationFrameId) {
+        lastTime = performance.now();
+        dropCounter = 0;
+        update();
+      }
     } else {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
     }
+    draw();
   }
-  if (e.key === 'r') {
-    resetGame();
-  }
-  draw();
-});
-
-playPauseButton.addEventListener('click', () => {
-  isPlaying = !isPlaying;
-  playPauseButton.textContent
+  if (e.key === 'r')
