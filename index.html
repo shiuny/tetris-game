@@ -9,13 +9,17 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="score">Score: <span id="score">0</span></div>
+      <div class="score">Score: <span id="score">0</span> (High: <span id="high-score">0</span>)</div>
       <div class="controls">
         <button id="play-pause" aria-label="Play or Pause">▶️</button>
+        <button id="reset" aria-label="Reset">🔄</button>
         <button id="help" aria-label="Help">❓</button>
       </div>
     </div>
-    <canvas id="tetris" width="300" height="600"></canvas>
+    <div class="game-area">
+      <canvas id="tetris" width="300" height="600"></canvas>
+      <canvas id="next-piece" width="120" height="120"></canvas>
+    </div>
     <div id="help-modal" class="modal hidden">
       <div class="modal-content">
         <h2>操作方法</h2>
@@ -31,6 +35,9 @@
         <p>↑: 時計回り回転</p>
         <p>↓: 高速落下</p>
         <p>スペース: 即時落下</p>
+        <p>P: 再生/一時停止</p>
+        <p>R: リセット</p>
+        <p>Esc: ヘルプ閉じる</p>
         <button id="close-help">閉じる</button>
       </div>
     </div>
