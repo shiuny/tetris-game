@@ -13,7 +13,7 @@ const closeHelpButton = document.getElementById('close-help');
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
 let BLOCK_SIZE = 0;
-const NEXT_BLOCK_SIZE = nextCanvas.width / 4;
+let NEXT_BLOCK_SIZE = 0;
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let isPlaying = false;
@@ -24,7 +24,11 @@ let lastTime = 0;
 let dropCounter = 0;
 let dropInterval = 1000;
 let animationFrameId = null;
-let touchCount = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+let isSwiping = false;
+const pixelRatio = window.devicePixelRatio || 1;
 
 const PIECES = [
   [[1, 1, 1, 1]], // I
@@ -42,17 +46,25 @@ function resizeCanvas() {
   const maxWidth = window.innerWidth * 0.9;
   const maxHeight = window.innerHeight * 0.55;
   const aspectRatio = GRID_HEIGHT / GRID_WIDTH;
-  const pixelRatio = window.devicePixelRatio || 1;
-  canvas.width = Math.min(maxWidth, maxHeight / aspectRatio) * pixelRatio;
-  canvas.height = canvas.width * aspectRatio;
+  let logicalWidth = Math.min(maxWidth, maxHeight / aspectRatio);
+  let logicalHeight = logicalWidth * aspectRatio;
+  canvas.style.width = logicalWidth + 'px';
+  canvas.style.height = logicalHeight + 'px';
+  canvas.width = logicalWidth * pixelRatio;
+  canvas.height = logicalHeight * pixelRatio;
   ctx.scale(pixelRatio, pixelRatio);
-  BLOCK_SIZE = canvas.width / pixelRatio / GRID_WIDTH;
+  BLOCK_SIZE = logicalWidth / GRID_WIDTH;
+
+  const nextLogicalSize = Math.min(80, logicalWidth / 5);
+  nextCanvas.style.width = nextLogicalSize + 'px';
+  nextCanvas.style.height = nextLogicalSize + 'px';
+  nextCanvas.width = nextLogicalSize * pixelRatio;
+  nextCanvas.height = nextLogicalSize * pixelRatio;
+  nextCtx.scale(pixelRatio, pixelRatio);
+  NEXT_BLOCK_SIZE = nextLogicalSize / 4;
 }
 
-window.addEventListener('resize', () => {
-  resizeCanvas();
-  draw();
-});
+window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 function createPiece() {
@@ -66,7 +78,7 @@ function createPiece() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
   for (let y = 0; y < GRID_HEIGHT; y++) {
     for (let x = 0; x < GRID_WIDTH; x++) {
       if (board[y][x]) {
@@ -93,7 +105,7 @@ function draw() {
 }
 
 function drawNextPiece() {
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  nextCtx.clearRect(0, 0, nextCanvas.width / pixelRatio, nextCanvas.height / pixelRatio);
   if (nextPiece) {
     nextCtx.fillStyle = nextPiece.color;
     const offsetX = (4 - nextPiece.shape[0].length) / 2;
@@ -209,7 +221,6 @@ function resetGame() {
   currentPiece = null;
   nextPiece = createPiece();
   score = 0;
-  dropCounter = 0;
   scoreElement.textContent = score;
   highScoreElement.textContent = highScore;
   isPlaying = false;
@@ -230,14 +241,8 @@ function update(time = 0) {
   animationFrameId = requestAnimationFrame(update);
 }
 
-let touchStartX = 0;
-let touchStartY = 0;
-let touchStartTime = 0;
-let isSwiping = false;
-
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
-  touchCount = e.touches.length;
   isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
@@ -272,7 +277,7 @@ canvas.addEventListener('touchmove', (e) => {
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   const touchDuration = Date.now() - touchStartTime;
-  if (!isSwiping && touchDuration < 250 && touchCount === 1 && currentPiece) {
+  if (e.changedTouches.length === 1 && e.touches.length === 0 && !isSwiping && touchDuration < 200 && currentPiece) {
     const touch = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
     if (touch.clientX < rect.left + rect.width / 2) {
@@ -283,8 +288,6 @@ canvas.addEventListener('touchend', (e) => {
   }
   dropInterval = 1000;
   isSwiping = false;
-  touchCount = 0;
-  draw();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -325,18 +328,13 @@ document.addEventListener('keydown', (e) => {
         currentPiece = nextPiece;
         nextPiece = createPiece();
       }
-      if (!animationFrameId) {
-        lastTime = performance.now();
-        dropCounter = 0;
-        update();
-      }
+      animationFrameId = requestAnimationFrame(update);
     } else {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
     }
-    draw();
   }
   if (e.key === 'r') {
     resetGame();
@@ -344,53 +342,6 @@ document.addEventListener('keydown', (e) => {
   draw();
 });
 
-document.addEventListener('keyup', (e) => {
-  if (e.key === 'ArrowDown') dropInterval = 1000;
-});
-
-function handleButtonTouch(e) {
-  e.preventDefault();
-  this.click();
-}
-
 playPauseButton.addEventListener('click', () => {
   isPlaying = !isPlaying;
-  playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
-  if (isPlaying) {
-    if (!currentPiece) {
-      currentPiece = nextPiece;
-      nextPiece = createPiece();
-    }
-    if (!animationFrameId) {
-      lastTime = performance.now();
-      dropCounter = 0;
-      update();
-    }
-  } else {
-    if (animationFrameId) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
-    }
-  }
-  draw();
-});
-playPauseButton.addEventListener('touchstart', handleButtonTouch);
-
-resetButton.addEventListener('click', () => {
-  resetGame();
-});
-resetButton.addEventListener('touchstart', handleButtonTouch);
-
-helpButton.addEventListener('click', () => {
-  helpModal.classList.remove('hidden');
-});
-helpButton.addEventListener('touchstart', handleButtonTouch);
-
-closeHelpButton.addEventListener('click', () => {
-  helpModal.classList.add('hidden');
-});
-closeHelpButton.addEventListener('touchstart', handleButtonTouch);
-
-highScoreElement.textContent = highScore;
-nextPiece = createPiece();
-draw();
+  playPauseButton.textContent
