@@ -24,6 +24,7 @@ let lastTime = 0;
 let dropCounter = 0;
 let dropInterval = 1000;
 let animationFrameId = null;
+let touchCount = 0;
 
 const PIECES = [
   [[1, 1, 1, 1]], // I
@@ -39,11 +40,13 @@ const COLORS = ['#00f', '#ff0', '#f0f', '#0ff', '#f00', '#00a', '#a00'];
 
 function resizeCanvas() {
   const maxWidth = window.innerWidth * 0.9;
-  const maxHeight = window.innerHeight * 0.6;
+  const maxHeight = window.innerHeight * 0.55;
   const aspectRatio = GRID_HEIGHT / GRID_WIDTH;
-  canvas.width = Math.min(maxWidth, maxHeight / aspectRatio);
+  const pixelRatio = window.devicePixelRatio || 1;
+  canvas.width = Math.min(maxWidth, maxHeight / aspectRatio) * pixelRatio;
   canvas.height = canvas.width * aspectRatio;
-  BLOCK_SIZE = canvas.width / GRID_WIDTH;
+  ctx.scale(pixelRatio, pixelRatio);
+  BLOCK_SIZE = canvas.width / pixelRatio / GRID_WIDTH;
 }
 
 window.addEventListener('resize', () => {
@@ -206,6 +209,7 @@ function resetGame() {
   currentPiece = null;
   nextPiece = createPiece();
   score = 0;
+  dropCounter = 0;
   scoreElement.textContent = score;
   highScoreElement.textContent = highScore;
   isPlaying = false;
@@ -233,6 +237,7 @@ let isSwiping = false;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
+  touchCount = e.touches.length;
   isSwiping = false;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
@@ -267,7 +272,7 @@ canvas.addEventListener('touchmove', (e) => {
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   const touchDuration = Date.now() - touchStartTime;
-  if (!isSwiping && touchDuration < 200 && e.touches.length === 0 && currentPiece) {
+  if (!isSwiping && touchDuration < 250 && touchCount === 1 && currentPiece) {
     const touch = e.changedTouches[0];
     const rect = canvas.getBoundingClientRect();
     if (touch.clientX < rect.left + rect.width / 2) {
@@ -278,6 +283,7 @@ canvas.addEventListener('touchend', (e) => {
   }
   dropInterval = 1000;
   isSwiping = false;
+  touchCount = 0;
   draw();
 });
 
@@ -314,15 +320,23 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'p') {
     isPlaying = !isPlaying;
     playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
-    if (isPlaying && !currentPiece) {
-      currentPiece = nextPiece;
-      nextPiece = createPiece();
-      draw();
+    if (isPlaying) {
+      if (!currentPiece) {
+        currentPiece = nextPiece;
+        nextPiece = createPiece();
+      }
+      if (!animationFrameId) {
+        lastTime = performance.now();
+        dropCounter = 0;
+        update();
+      }
+    } else {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
     }
-    if (isPlaying && !animationFrameId) {
-      lastTime = performance.now();
-      update();
-    }
+    draw();
   }
   if (e.key === 'r') {
     resetGame();
@@ -342,15 +356,23 @@ function handleButtonTouch(e) {
 playPauseButton.addEventListener('click', () => {
   isPlaying = !isPlaying;
   playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
-  if (isPlaying && !currentPiece) {
-    currentPiece = nextPiece;
-    nextPiece = createPiece();
-    draw();
+  if (isPlaying) {
+    if (!currentPiece) {
+      currentPiece = nextPiece;
+      nextPiece = createPiece();
+    }
+    if (!animationFrameId) {
+      lastTime = performance.now();
+      dropCounter = 0;
+      update();
+    }
+  } else {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   }
-  if (isPlaying && !animationFrameId) {
-    lastTime = performance.now();
-    update();
-  }
+  draw();
 });
 playPauseButton.addEventListener('touchstart', handleButtonTouch);
 
