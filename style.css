@@ -1,5 +1,5 @@
 * {
-  box-sizing: border-box; /* モーダルやコンテナのサイズ安定化 */
+  box-sizing: border-box;
 }
 
 body {
@@ -16,7 +16,7 @@ body {
   text-align: center;
   padding: 10px;
   width: 100%;
-  max-width: 1200px; /* 画面幅制限 */
+  max-width: 1200px;
 }
 
 .header {
@@ -76,7 +76,7 @@ body {
   padding: 20px;
   border-radius: 10px;
   max-width: 80%;
-  min-width: 300px; /* 最小幅で飛び出し防止 */
+  min-width: 300px;
   max-height: 80vh;
   overflow-y: auto;
   box-sizing: border-box;

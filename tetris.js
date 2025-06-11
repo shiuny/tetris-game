@@ -10,10 +10,10 @@ const helpButton = document.getElementById('help');
 const helpModal = document.getElementById('help-modal');
 const closeHelpButton = document.getElementById('close-help');
 
-if (!canvas || !ctx || !nextCanvas || !nextCtx) {
-  console.error('Canvas initialization failed: Elements or context missing');
-  alert('Error: Unable to initialize game canvas. Check browser compatibility.');
-  throw new Error('Canvas initialization failed');
+if (!canvas || !ctx || !nextCanvas || !nextCtx || !scoreElement || !highScoreElement || !playPauseButton || !resetButton || !helpButton || !helpModal || !closeHelpButton) {
+  console.error('Initialization failed: Missing DOM elements or context');
+  alert('Error: Unable to initialize game. Check browser compatibility or DOM elements.');
+  throw new Error('Initialization failed');
 }
 
 const GRID_WIDTH = 10;
@@ -56,6 +56,7 @@ function createPiece() {
 function draw() {
   try {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    console.log('Cleared main canvas');
     for (let y = 0; y < GRID_HEIGHT; y++) {
       for (let x = 0; x < GRID_WIDTH; x++) {
         if (board[y][x]) {
@@ -87,6 +88,7 @@ function draw() {
 function drawNextPiece() {
   try {
     nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    console.log('Drawing next piece to nextCanvas');
     if (nextPiece) {
       nextCtx.fillStyle = nextPiece.color;
       const offsetX = (4 - nextPiece.shape[0].length) / 2;
@@ -175,6 +177,7 @@ function rotatePiece(clockwise = true) {
 }
 
 function dropPiece() {
+  console.log('dropPiece called');
   if (!currentPiece) {
     currentPiece = nextPiece || createPiece();
     nextPiece = createPiece();
@@ -197,6 +200,7 @@ function dropPiece() {
 }
 
 function resetGame() {
+  console.log('resetGame called');
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
@@ -206,14 +210,16 @@ function resetGame() {
   nextPiece = createPiece();
   score = 0;
   dropCounter = 0;
-  scoreElement.textContent = score;
-  highScoreElement.textContent = highScore;
+  lastTime = 0;
   isPlaying = false;
   playPauseButton.textContent = '▶️';
+  scoreElement.textContent = score;
+  highScoreElement.textContent = highScore;
   draw();
 }
 
 function update(time = 0) {
+  console.log('update called, isPlaying:', isPlaying);
   if (!isPlaying) return;
   const deltaTime = time - lastTime;
   lastTime = time;
@@ -228,21 +234,24 @@ function update(time = 0) {
 
 // ボタンイベント
 playPauseButton.addEventListener('click', () => {
-  console.log('Play/Pause clicked');
+  console.log('Play/Pause clicked, isPlaying:', isPlaying);
   isPlaying = !isPlaying;
   playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
   if (isPlaying) {
     if (!currentPiece) {
-      currentPiece = nextPiece;
+      currentPiece = nextPiece || createPiece();
       nextPiece = createPiece();
+      console.log('New piece created:', currentPiece);
     }
     lastTime = performance.now();
     dropCounter = 0;
     if (!animationFrameId) {
+      console.log('Starting animation frame');
       animationFrameId = requestAnimationFrame(update);
     }
   } else {
     if (animationFrameId) {
+      console.log('Canceling animation frame');
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
@@ -271,6 +280,7 @@ let touchStartY = 0;
 let touchStartTime = 0;
 let isSwiping = false;
 let startTouchCount = 0;
+let touchMovedDistance = 0;
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -278,6 +288,7 @@ canvas.addEventListener('touchstart', (e) => {
   console.log(`Touch start: ${startTouchCount} finger(s), x=${e.touches[0].clientX}, y=${e.touches[0].clientY}`);
   if (startTouchCount > 2) return;
   isSwiping = false;
+  touchMovedDistance = 0;
   const touch = e.touches[0];
   touchStartX = touch.clientX;
   touchStartY = touch.clientY;
@@ -289,19 +300,22 @@ canvas.addEventListener('touchmove', (e) => {
   const touchCount = e.touches.length;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const isInsideCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
-                        touch.clientY >= rect.top && touch.clientY <= rect.bottom;
-  console.log(`Touch move: ${touchCount} finger(s), x=${touch.clientX}, y=${touch.clientY}, inside=${isInsideCanvas}`);
+  const touchX = touch.clientX;
+  const touchY = touch.clientY;
+  const isInsideCanvas = touchX >= rect.left && touchX <= rect.right &&
+                        touchY >= rect.top && touchY <= rect.bottom;
+  const deltaX = touchX - touchStartX;
+  const deltaY = touchY - touchStartY;
+  touchMovedDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  console.log(`Touch move: ${touchCount} finger(s), x=${touchX}, y=${touchY}, inside=${isInsideCanvas}, moved=${touchMovedDistance.toFixed(2)}px`);
   if (!isInsideCanvas) return;
-  isSwiping = true;
-  const deltaX = touch.clientX - touchStartX;
-  const deltaY = touch.clientY - touchStartY;
+  isSwiping = touchMovedDistance > 10;
   if (touchCount === 1 && currentPiece && startTouchCount === 1) {
     if (Math.abs(deltaX) > 30) {
       currentPiece.x += deltaX > 0 ? 1 : -1;
       if (collides()) currentPiece.x -= deltaX > 0 ? 1 : -1;
-      touchStartX = touch.clientX;
-      console.log(`Swipe move: x=${currentPiece.x}`);
+      touchStartX = touchX;
+      console.log(`Single swipe: x=${currentPiece.x}`);
     }
     if (deltaY > 20) {
       dropInterval = 100;
@@ -324,14 +338,16 @@ canvas.addEventListener('touchend', (e) => {
   const touchCount = e.changedTouches.length;
   const touchDuration = Date.now() - touchStartTime;
   const touch = e.changedTouches[0];
+  const touchX = touch.clientX;
+  const touchY = touch.clientY;
   const rect = canvas.getBoundingClientRect();
-  const isInsideCanvas = touch.clientX >= rect.left && touch.clientX <= rect.right &&
-                        touch.clientY >= rect.top && touch.clientY <= rect.bottom;
-  console.log(`Touch end: ${touchCount} finger(s), duration=${touchDuration}ms, x=${touch.clientX}, inside=${isInsideCanvas}`);
-  if (!isSwiping && startTouchCount === 1 && touchDuration < 300 && isInsideCanvas && currentPiece) {
-    const direction = touch.clientX < rect.left + rect.width / 2 ? 'counterclockwise' : 'clockwise';
+  const isInsideCanvas = touchX >= rect.left && touchX <= rect.right &&
+                        touchY >= rect.top && touchY <= rect.bottom;
+  console.log(`Touch end: ${touchCount} finger(s), duration=${touchDuration}ms, x=${touchX}, y=${touchY}, inside=${isInsideCanvas}, moved=${touchMovedDistance.toFixed(2)}px`);
+  if (!isSwiping && startTouchCount === 1 && touchDuration <= 500 && isInsideCanvas && currentPiece) {
+    const direction = touchX < rect.left + rect.width / 2 ? 'counterclockwise' : 'clockwise';
     console.log(`Tap: ${direction}`);
-    if (touch.clientX < rect.left + rect.width / 2) {
+    if (direction === 'counterclockwise') {
       rotatePiece(false);
     } else {
       rotatePiece(true);
@@ -340,11 +356,12 @@ canvas.addEventListener('touchend', (e) => {
   dropInterval = 1000;
   isSwiping = false;
   startTouchCount = 0;
+  touchMovedDistance = 0;
   draw();
 });
 
 // キーイベント
-document.addEventListener('keydown', e => {
+document.addEventListener('keydown', (e) => {
   e.preventDefault();
   console.log(`Key pressed: ${e.key}`);
   if (e.key === 'Escape') {
@@ -364,9 +381,12 @@ document.addEventListener('keydown', e => {
     currentPiece.y++;
     if (collides()) currentPiece.y--;
     dropCounter = 0;
+    console.log('Key: Faster drop');
   } else if (e.key === ' ') {
     console.log('Spacebar: Instant drop');
-    while (!collides()) currentPiece.y++;
+    while (!collides()) {
+      currentPiece.y++;
+    }
     currentPiece.y--;
     merge();
     clearLines();
@@ -374,36 +394,41 @@ document.addEventListener('keydown', e => {
     draw();
     return;
   } else if (e.key === 'p') {
-    console.log('P: Toggle play/pause');
+    console.log('P: Toggle play/pause, isPlaying:', isPlaying);
     isPlaying = !isPlaying;
     playPauseButton.textContent = isPlaying ? '⏸️' : '▶️';
     if (isPlaying) {
       if (!currentPiece) {
-        currentPiece = nextPiece;
+        currentPiece = nextPiece || createPiece();
         nextPiece = createPiece();
+        console.log('New piece created:', currentPiece);
       }
       lastTime = performance.now();
       dropCounter = 0;
       if (!animationFrameId) {
+        console.log('Starting animation frame');
         animationFrameId = requestAnimationFrame(update);
       }
     } else {
       if (animationFrameId) {
+        console.log('Canceling animation frame');
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
     }
   } else if (e.key === 'r') {
+    console.log('R: Reset');
     resetGame();
   }
   draw();
 });
 
-document.addEventListener('keyup', e => {
+document.addEventListener('keyup', (e) => {
   if (e.key === 'ArrowDown') dropInterval = 1000;
 });
 
 // 初期化
 highScoreElement.textContent = highScore;
+scoreElement.textContent = score;
 nextPiece = createPiece();
 draw();
