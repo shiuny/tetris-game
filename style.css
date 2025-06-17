@@ -4,12 +4,15 @@
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f0f0f0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #2c3e50; /* より深みのある背景色 */
+  background-image: linear-gradient(135deg, #34495e 0%, #233140 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  color: #ecf0f1;
+  overflow: hidden;
 }
 
 .container {
@@ -23,39 +26,62 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 50px; /* 傾斜に合わせてマージンを調整 */
 }
 
 .score {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 1.3em;
+  font-weight: 600;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+  letter-spacing: 1px;
 }
 
 .controls button {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   cursor: pointer;
   font-size: 24px;
-  padding: 5px;
+  padding: 10px;
+  width: 50px;
+  height: 50px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  transition: all 0.2s ease-in-out;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
   touch-action: manipulation;
 }
 
 .controls button:hover {
+  background: rgba(255, 255, 255, 0.25);
   transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
 }
 
 .game-area {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 15px;
+  gap: 30px;
   justify-content: center;
   align-items: flex-start;
+  perspective: 1200px; /* 遠近感を少し強く */
+  transform-style: preserve-3d;
 }
 
 #tetris, #next-piece {
-  border: 2px solid #333;
-  background: #222;
+  border: 3px solid #7f8c8d;
+  background-color: #1a1a1a;
+  box-shadow: 15px 20px 35px rgba(0, 0, 0, 0.5);
+  transform: rotateX(30deg) rotateZ(-12deg);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+#tetris:hover, #next-piece:hover {
+  transform: rotateX(25deg) rotateZ(-10deg) translateY(-15px);
+  box-shadow: 20px 25px 45px rgba(0, 0, 0, 0.6);
 }
 
 .modal {
@@ -64,7 +90,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px); /* 背景をぼかす */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -72,14 +99,34 @@ body {
 }
 
 .modal-content {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  max-width: 80%;
+  background: #ecf0f1;
+  color: #2c3e50;
+  padding: 25px 35px;
+  border-radius: 15px;
+  max-width: 90%;
   min-width: 300px;
   max-height: 80vh;
   overflow-y: auto;
-  box-sizing: border-box;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.modal-content button {
+    display: block;
+    margin: 25px auto 0;
+    padding: 12px 25px;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.modal-content button:hover {
+    background-color: #2980b9;
 }
 
 .hidden {
@@ -87,44 +134,40 @@ body {
 }
 
 @media (max-width: 600px) {
-  #tetris {
-    width: 200px;
-    height: 400px;
-  }
-  #next-piece {
-    width: 80px;
-    height: 80px;
-  }
-  .header {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .score {
-    font-size: 16px;
-  }
-  .controls button {
-    font-size: 20px;
-  }
+  #tetris { width: 200px; height: 400px; }
+  #next-piece { width: 80px; height: 80px; }
+  .header { flex-direction: column; gap: 20px; }
+  .score { font-size: 1.2em; }
+  .controls button { font-size: 20px; width: 45px; height: 45px; }
 }
 
 @media (min-width: 601px) and (max-width: 1200px) {
-  #tetris {
-    width: 250px;
-    height: 500px;
-  }
-  #next-piece {
-    width: 100px;
-    height: 100px;
-  }
+  #tetris { width: 250px; height: 500px; }
+  #next-piece { width: 100px; height: 100px; }
 }
 
 @media (min-width: 1201px) {
-  #tetris {
-    width: 300px;
-    height: 600px;
-  }
-  #next-piece {
-    width: 120px;
-    height: 120px;
-  }
+  #tetris { width: 300px; height: 600px; }
+  #next-piece { width: 120px; height: 120px; }
+}
+
+/* style.css の末尾に追記 */
+
+/* スクリーンシェイク用のアニメーション */
+.shake {
+  animation: shake-animation 0.4s ease-in-out;
+}
+
+@keyframes shake-animation {
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-3px, 2px); }
+  20% { transform: translate(4px, -3px); }
+  30% { transform: translate(-2px, 3px); }
+  40% { transform: translate(3px, -2px); }
+  50% { transform: translate(-4px, 2px); }
+  60% { transform: translate(2px, -3px); }
+  70% { transform: translate(-3px, 3px); }
+  80% { transform: translate(4px, -2px); }
+  90% { transform: translate(-2px, 2px); }
+  100% { transform: translate(0, 0); }
 }

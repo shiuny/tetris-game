@@ -1,27 +1,67 @@
-# Tetris
+# 進化した3D風テトリス (3D Tetris Evolved)
 
-A simple Tetris game built with HTML, CSS, and JavaScript. Playable on smartphones, tablets, and PCs.
+往年の名作テトリスが、最新の機能、美しい3D風ビジュアル、そしてダイナミックなエフェクトで進化したゲームです。HTML, CSS, JavaScriptで構築されており、スマートフォン、タブレット、PCのすべてでプレイ可能です。
 
-## Features
-- **Responsive**: Optimized for mobile (21:9), tablets (iPadOS 15/18), and desktop with unified row layout.
-- **Controls**:
-  - **Mobile/Tablet**: Single-tap left/right for rotation, single-swipe left/right to move, single-swipe down for faster drop, two-finger swipe down for instant drop.
-  - **PC**: Arrow keys (←/→ move, ↑ rotate, ↓ faster drop), spacebar for instant drop, P for play/pause, R for reset, Esc to close help.
-- **UI**: Score, high score, play/pause (▶️/⏸️), reset (🔄), help (❓), next piece (right-aligned).
-- **Design**: Flex row layout, dark grey canvas, high-contrast pieces with white borders.
-- **Persistence**: High score via `localStorage`.
+このプロジェクトは、生成AIの助けを借りて作られたシンプルなテトリスから始まり、よりリッチで魅力的なゲーム体験を提供するために、数々の機能強化が行われました。
 
-## Deployment
-1. Save `index.html`, `style.css`, `tetris.js`, `README.md` in a folder.
-2. Upload files via GitHub's web interface.
-3. Go to **Settings > Pages**, set branch to `main`, folder to `root`.
-4. Visit `https://<username>.github.io/tetris-game`.
+**(ここにゲームのスクリーンショットやGIF動画を挿入すると、さらに魅力が伝わります！)**
 
-## Local Testing
-1. Save `index.html`, `style.css`, `tetris.js` in a folder.
-2. Run `python3 -m http.server 8000` in the folder.
-3. Open `http://localhost:8000` in Chrome/Safari.
-4. Clear cache with **Command + Shift + R**.
+## ゲームをプレイする
 
-## License
-MIT
+GitHub Pagesでゲームをプレイできます:
+`https://<あなたのユーザー名>.github.io/<リポジトリ名>/`
+
+## このゲームの特長
+
+### ✨ ゲームプレイの進化
+- **ウォールキック**: 壁や他のブロックに隣接していてもピースをスムーズに回転させることができ、Tスピンなどの高度な操作が直感的に行えます。
+- **ゴーストピース**: ピースがどこに落ちるかを半透明で表示し、より戦略的で正確な設置をサポートします。
+- **高度なスコアリング**: 一度に複数のラインを消すことで、より高いスコアを獲得できます（4ライン消しで「テトリス」ボーナス！）。
+- **レベルアップシステム**: 10ライン消すごとにゲームスピードが上昇し、やりごたえのある挑戦が続きます。
+
+### 🚀 目を引くビジュアルとエフェクト
+- **疑似3D（アイソメトリック）ビュー**: CSSの3D変形技術により、ゲーム盤が立体的に傾いて見える、没入感のある視点を実現しました。
+- **立体的なブロックデザイン**: ブロック一つ一つが、光と影を持つ立体物として描画され、リアルな質感を表現しています。
+- **ダイナミックなライン消去エフェクト**:
+  - **フラッシュ＆フェードアウト**: 消えるラインが強く光り、滑らかに消えていきます。
+  - **パーティクル（光の粒子）の飛散**: ラインが消えた場所から、美しい光の粒子が飛び散ります。
+  - **スクリーンシェイク**: ラインを消した瞬間に画面が揺れ、爽快なインパクトを与えます。
+
+### 🎮 基本機能
+- **レスポンシブデザイン**: スマートフォンからPCまで、様々な画面サイズに最適化されています。
+- **クロスプラットフォーム対応の操作**: PCのキーボードでも、スマホのタッチ操作でも、快適にプレイできます。
+- **ハイスコアの永続化**: あなたのハイスコアは、ブラウザの`localStorage`に自動で保存されます。
+- **モダンなUI**: スコア表示、次のピースのプレビュー、ヘルプ画面など、必要な情報が揃ったクリーンなインターフェース。
+
+## 操作方法
+
+### スマートフォン / タブレット
+- **左右スワイプ**: ピースを左右に移動
+- **タップ**: ピースを時計回りに回転
+- **下スワイプ**: 高速落下（ソフトドロップ）
+- **2本指で下スワイプ**: 即時落下（ハードドロップ）
+
+### PC / キーボード
+- **← / →**: ピースを左右に移動
+- **↑**: ピースを時計回りに回転
+- **↓**: 高速落下（ソフトドロップ）
+- **スペースキー**: 即時落下（ハードドロップ）
+- **Pキー**: 再生 / 一時停止
+- **Rキー**: リセット
+- **Escキー**: ヘルプを閉じる
+
+## デプロイ方法 (GitHub Pages)
+1. `index.html`, `style.css`, `tetris.js` の3つのファイルがリポジトリにあることを確認します。
+2. リポジトリの **Settings > Pages** に移動します。
+3. "Build and deployment" の項目で、Sourceを **Deploy from a branch** にします。
+4. Branchの項目で、ブランチを `main` に、フォルダを `/ (root)` に設定して保存します。
+5. しばらくすると、表示されたURLでゲームが公開されます。
+
+## ローカルでのテスト方法
+1. `index.html`, `style.css`, `tetris.js` を同じフォルダに保存します。
+2. ターミナルでそのフォルダに移動し、ローカルサーバーを起動します。 (Python 3の場合: `python3 -m http.server 8000`)
+3. ブラウザで `http://localhost:8000` を開きます。
+4. 変更を反映させるには、**Cmd+Shift+R** (Mac) または **Ctrl+Shift+R** (Windows) でスーパーリロードしてください。
+
+## ライセンス
+このプロジェクトはMITライセンスの下で公開されています。
